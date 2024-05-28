@@ -1,3 +1,3 @@
-./**/*.creds
+./**/credentials
 **/*.lock*
 .terraform
