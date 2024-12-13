@@ -1,9 +1,7 @@
 #!/bin/bash
-# https://serverfault.com/questions/1120427/how-do-i-install-php-memcached-for-php-8-x-on-amazon-linux-2-aarch64
 
 set -xe
 
-# Update the system and install NFS utilities
 yum update -y
 
 sudo su - root
@@ -48,8 +46,6 @@ fi
 if [ ! -d ${EfsDir}/${WPSubDirectory} ]; then
   mkdir -p ${EfsDir}/${WPSubDirectory}
 
-  # Install WordPress if not installed
-  # Use public ALB host name if WP domain name is empty
   if ! $(wp core is-installed --path=${EfsDir}/${WPSubDirectory} --allow-root); then
     php -d memory_limit=-1 /bin/wp-cli.phar core download --path=${EfsDir}/${WPSubDirectory} --version='${WPVersion}' --locale='${WPLocale}' --allow-root
     /bin/wp-cli.phar core config --path=${EfsDir}/${WPSubDirectory} --dbname='${DatabaseName}' --dbuser="$USERNAME" --dbpass="$PASSWORD" --dbhost='${DatabaseClusterEndpointAddress}' --dbprefix=wp_ --allow-root
