@@ -2,3 +2,4 @@
 **/*.lock*
 **/*terraform*
 .env
+**/.DS_Store
