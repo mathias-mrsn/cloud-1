@@ -1,5 +1,5 @@
 locals {
-    domain_name = var.domain_name != null ? var.domain_name : module.cloudfront.cloudfront_distribution_domain_name
+  domain_name = var.domain_name != null ? var.domain_name : module.cloudfront.cloudfront_distribution_domain_name
 }
 
 resource "aws_iam_policy" "asg-policy" {
@@ -101,6 +101,19 @@ module "autoscaling" {
       }
     }
   ]
+
+  scaling_policies = {
+    testing_asg = {
+      policy_type               = "TargetTrackingScaling"
+      estimated_instance_warmup = 30
+      target_tracking_configuration = {
+        predefined_metric_specification = {
+          predefined_metric_type = "ASGAverageCPUUtilization"
+        }
+        target_value = 50.0
+      }
+    },
+  }
 
   tags = {
     Origin     = var.name,

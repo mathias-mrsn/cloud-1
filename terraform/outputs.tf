@@ -7,3 +7,4 @@ output "cloudfront_dns_name" {
   description = "The DNS name of the CloudFront distribution."
   value       = module.cloudfront.cloudfront_distribution_domain_name
 }
+
