@@ -1,0 +1,23 @@
+framework:
+  - terraform
+quiet: true
+compact: true
+download-external-modules: true
+evaluate-variables: true
+skip-check:
+  - CKV_AWS_150
+  - CKV_AWS_2
+  - CKV_AWS_260
+  - CKV_AWS_259
+  - CKV_AWS_111
+  - CKV_AWS_356
+  - CKV_AWS_338
+  - CKV_AWS_97
+  - CKV_AWS_324
+  - CKV_AWS_226
+  - CKV_AWS_118
+  - CKV_TF_1
+  - CKV_AWS_158
+  - CKV_AWS_23
+skip-path:
+  - terraform/main.auto.tfvars.json

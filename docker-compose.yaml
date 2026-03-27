@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   terraform:
-    image: hashicorp/terraform:1.9.5
+    image: hashicorp/terraform:1.13.4
     volumes:
       - ./terraform:/terraform
     env_file: ".env"
