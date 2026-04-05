@@ -1,15 +1,4 @@
-variable "name" {
-  description = "The name used for all resources."
-  type        = string
-  default     = "wordpress"
-
-  validation {
-    condition     = length(var.name) > 6
-    error_message = "The project name must be at least 7 characters long."
-  }
-}
-
-variable "region" {
+variable "aws_region" {
   description = "The region where most resources will be deployed."
   type        = string
   default     = "eu-west-3"
@@ -18,11 +7,15 @@ variable "region" {
 variable "azs" {
   description = "The availability zones where WordPress will be placed. These zones must be within the specified region."
   type        = list(string)
-  default     = ["eu-west-3a", "eu-west-3b", "eu-west-3c"]
+
+  default = [
+    "eu-west-3a",
+    "eu-west-3b",
+  ]
 
   validation {
-    condition     = length(var.azs) > 1
-    error_message = "You must specify at least 2 availability zones."
+    condition     = length(var.azs) >= 2
+    error_message = "At least 2 availability zones are required for the ALB and Aurora subnet group."
   }
 }
 
@@ -39,7 +32,7 @@ variable "distribution_price_class" {
 }
 
 variable "ecs_desired_count" {
-  description = "The number of WordPress tasks to keep running in ECS Fargate."
+  description = "The number of WordPress tasks to keep running in ECS."
   type        = number
   default     = 2
 
@@ -49,40 +42,73 @@ variable "ecs_desired_count" {
   }
 }
 
-variable "ecs_task_cpu" {
-  description = "The CPU units allocated to each WordPress ECS Fargate task."
+variable "wordpress_task_cpu" {
+  description = "The CPU units allocated to the WordPress container in the main ECS task."
   type        = number
   default     = 256
 }
 
-variable "ecs_task_memory" {
-  description = "The memory in MiB allocated to each WordPress ECS Fargate task."
+variable "wordpress_task_memory" {
+  description = "The memory in MiB allocated to the WordPress container in the main ECS task."
+  type        = number
+  default     = 512
+}
+
+variable "nginx_task_cpu" {
+  description = "The CPU units allocated to the Nginx container in the main ECS task."
+  type        = number
+  default     = 256
+}
+
+variable "nginx_task_memory" {
+  description = "The memory in MiB allocated to the Nginx container in the main ECS task."
   type        = number
   default     = 512
 }
 
 variable "ecs_instance_type" {
-  description = "Deprecated. Former ECS on EC2 instance type input kept temporarily to avoid tfvars warnings during the Fargate rollback."
+  description = "The EC2 instance type used by the ECS Auto Scaling group."
   type        = string
-  default     = null
+  default     = "t2.micro"
 }
 
 variable "ecs_root_volume_size" {
-  description = "Deprecated. Former ECS on EC2 root volume size input kept temporarily to avoid tfvars warnings during the Fargate rollback."
+  description = "The root EBS volume size in GiB for ECS EC2 instances."
   type        = number
-  default     = null
+  default     = 30
 }
 
-variable "wordpress_container_image" {
-  description = "Optional override for the WordPress container image. Leave null to use the Terraform-managed ECR image."
-  type        = string
-  default     = null
+variable "ecs_instance_min_size" {
+  description = "The minimum number of EC2 instances in the ECS Auto Scaling group."
+  type        = number
+  default     = 2
+
+  validation {
+    condition     = var.ecs_instance_min_size > 0 && var.ecs_instance_min_size <= var.ecs_instance_desired_capacity
+    error_message = "ecs_instance_min_size must be greater than 0 and lower than or equal to ecs_instance_desired_capacity."
+  }
 }
 
-variable "phpmyadmin_enabled" {
-  description = "Whether to deploy a dedicated phpMyAdmin Fargate service. Requires domain_name to expose it via a subdomain."
-  type        = bool
-  default     = false
+variable "ecs_instance_desired_capacity" {
+  description = "The desired number of EC2 instances in the ECS Auto Scaling group."
+  type        = number
+  default     = 2
+
+  validation {
+    condition     = var.ecs_instance_desired_capacity >= var.ecs_desired_count
+    error_message = "ecs_instance_desired_capacity must be greater than or equal to ecs_desired_count."
+  }
+}
+
+variable "ecs_instance_max_size" {
+  description = "The maximum number of EC2 instances in the ECS Auto Scaling group."
+  type        = number
+  default     = 3
+
+  validation {
+    condition     = var.ecs_instance_max_size >= var.ecs_instance_desired_capacity
+    error_message = "ecs_instance_max_size must be greater than or equal to ecs_instance_desired_capacity."
+  }
 }
 
 variable "phpmyadmin_subdomain" {
@@ -91,20 +117,14 @@ variable "phpmyadmin_subdomain" {
   default     = "pma"
 }
 
-variable "phpmyadmin_container_image" {
-  description = "The container image used for phpMyAdmin."
-  type        = string
-  default     = "phpmyadmin:5.2.2-apache"
-}
-
 variable "phpmyadmin_task_cpu" {
-  description = "The CPU units allocated to the phpMyAdmin ECS Fargate task."
+  description = "The CPU units allocated to the phpMyAdmin ECS task."
   type        = number
   default     = 256
 }
 
 variable "phpmyadmin_task_memory" {
-  description = "The memory in MiB allocated to the phpMyAdmin ECS Fargate task."
+  description = "The memory in MiB allocated to the phpMyAdmin ECS task."
   type        = number
   default     = 512
 }
@@ -115,34 +135,10 @@ variable "wordpress_shared_root" {
   default     = "/var/www/html"
 }
 
-variable "wp_version" {
-  description = "The WordPress version downloaded during bootstrap."
-  type        = string
-  default     = "latest"
-}
-
 variable "wp_language" {
   description = "The WordPress locale downloaded during bootstrap."
   type        = string
   default     = "en_US"
-}
-
-variable "memcached_enabled" {
-  description = "Whether to restore the Memcached cache layer and configure WordPress to use it."
-  type        = bool
-  default     = false
-}
-
-variable "memcached_node_type" {
-  description = "The ElastiCache node type used for WordPress Memcached."
-  type        = string
-  default     = "cache.t4g.small"
-}
-
-variable "memcached_num_cache_nodes" {
-  description = "The number of Memcached nodes to run across availability zones."
-  type        = number
-  default     = 3
 }
 
 variable "wp_site_title" {
@@ -161,10 +157,6 @@ variable "wp_admin_email" {
   description = "The email address for the WordPress administrator account."
   type        = string
 }
-
-# -----------------------------------------------------------------------------
-# Aurora
-# -----------------------------------------------------------------------------
 
 variable "mysql_version" {
   description = "The MySQL version used by Aurora."
@@ -207,10 +199,6 @@ variable "aurora_skip_final_snapshot" {
   type        = bool
   default     = false
 }
-
-# -----------------------------------------------------------------------------
-# EFS
-# -----------------------------------------------------------------------------
 
 variable "backup_region" {
   description = "If set, EFS will create a replica in the specified region."
