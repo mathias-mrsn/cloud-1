@@ -1,7 +1,0 @@
-.terraform/
-.external_modules/
-*.tfstate
-*.tfstate.*
-*.tfplan
-tfplan
-*.log

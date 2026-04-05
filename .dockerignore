@@ -1,0 +1,11 @@
+.git/
+.github/
+.local/
+terraform/.terraform/
+terraform/.external_modules/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/*.tfplan
+terraform/tfplan
+terraform/backend.json
+**/.DS_Store
