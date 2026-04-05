@@ -3,19 +3,21 @@ module "acm" {
   version = "6.3.0"
 
   providers = {
-    aws = aws.us-east-1
+    aws = aws.cloudfront
   }
 
   create_certificate   = var.domain_name != null
   validate_certificate = var.domain_name != null
 
-  domain_name       = coalesce(var.domain_name, "default")
+  domain_name = coalesce(var.domain_name, "default")
+  subject_alternative_names = var.domain_name != null ? [
+    local.phpmyadmin_domain_name,
+  ] : []
   validation_method = "DNS"
   zone_id           = try(data.aws_route53_zone.current[0].zone_id, null)
 
   tags = {
-    Origin     = var.name,
-    DeployedBy = "Terraform"
+    Name = "${local.prefix}-acm"
   }
 }
 
@@ -23,7 +25,10 @@ module "cloudfront" {
   source  = "terraform-aws-modules/cloudfront/aws"
   version = "6.4.0"
 
-  aliases = var.domain_name != null ? [var.domain_name] : null
+  aliases = var.domain_name != null ? compact([
+    var.domain_name,
+    local.phpmyadmin_domain_name,
+  ]) : null
 
   comment         = "Cloudfront for"
   http_version    = "http3"
@@ -34,6 +39,9 @@ module "cloudfront" {
     wordpress = {
       domain_name = module.alb.dns_name
       origin_id   = module.alb.id
+      custom_header = {
+        "X-CloudFront-Proto" = "https"
+      }
       custom_origin_config = {
         http_port              = 80
         https_port             = 443
@@ -111,8 +119,7 @@ module "cloudfront" {
   })
 
   tags = {
-    Origin     = var.name,
-    DeployedBy = "Terraform"
+    Name = "${local.prefix}-cloudfront"
   }
 }
 
@@ -125,7 +132,7 @@ module "records_domaine_to_main_zone" {
   create_zone = false
   name        = var.domain_name
 
-  records = merge({
+  records = {
     root = {
       full_name = var.domain_name
       type      = "A"
@@ -133,15 +140,15 @@ module "records_domaine_to_main_zone" {
         name    = module.cloudfront.cloudfront_distribution_domain_name
         zone_id = module.cloudfront.cloudfront_distribution_hosted_zone_id
       }
-    }
-    }, local.phpmyadmin_enabled ? {
+    },
+
     phpmyadmin = {
       full_name = local.phpmyadmin_domain_name
       type      = "A"
       alias = {
-        name    = module.alb.dns_name
-        zone_id = module.alb.zone_id
+        name    = module.cloudfront.cloudfront_distribution_domain_name
+        zone_id = module.cloudfront.cloudfront_distribution_hosted_zone_id
       }
     }
-  } : {})
+  }
 }

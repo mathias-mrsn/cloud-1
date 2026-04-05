@@ -6,36 +6,26 @@ module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "6.6.0"
 
-  providers = {
-    aws = aws.default
-  }
-
-  name = "vpc-${var.name}"
+  name = "${local.prefix}-vpc"
   cidr = local.cidr
   azs  = var.azs
 
   private_subnets      = [for i, az in var.azs : cidrsubnet(local.cidr, 8, i)]
-  private_subnet_names = [for i, az in var.azs : "${var.name}_private_${az}"]
+  private_subnet_names = [for i, az in var.azs : "${local.prefix}-private-${az}"]
   private_subnet_tags = {
-    Origin     = var.name,
-    Type       = "private",
-    DeployedBy = "Terraform"
+    Name = "${local.prefix}-private"
   }
 
   public_subnets      = [for i, az in var.azs : cidrsubnet(local.cidr, 8, i + 4)]
-  public_subnet_names = [for i, az in var.azs : "${var.name}_public_${az}"]
+  public_subnet_names = [for i, az in var.azs : "${local.prefix}-public-${az}"]
   public_subnet_tags = {
-    Origin     = var.name,
-    Type       = "public",
-    DeployedBy = "Terraform"
+    Name = "${local.prefix}-public"
   }
 
   database_subnets      = [for i, az in var.azs : cidrsubnet(local.cidr, 8, i + 8)]
-  database_subnet_names = [for i, az in var.azs : "${var.name}_database_${az}"]
+  database_subnet_names = [for i, az in var.azs : "${local.prefix}-database-${az}"]
   database_subnet_tags = {
-    Origin     = var.name,
-    Type       = "database",
-    DeployedBy = "Terraform"
+    Name = "${local.prefix}-database"
   }
 
   enable_dns_support = true
@@ -44,8 +34,7 @@ module "vpc" {
   create_igw         = true
 
   tags = {
-    Origin     = var.name,
-    DeployedBy = "Terraform"
+    Name = "${local.prefix}-vpc"
   }
 }
 
@@ -53,11 +42,7 @@ module "alb" {
   source  = "terraform-aws-modules/alb/aws"
   version = "10.5.0"
 
-  providers = {
-    aws = aws.default
-  }
-
-  name                       = "alb-${var.name}"
+  name                       = "${local.prefix}-alb"
   vpc_id                     = module.vpc.vpc_id
   subnets                    = module.vpc.public_subnets
   enable_deletion_protection = false
@@ -87,7 +72,7 @@ module "alb" {
         target_group_key = "wordpress"
       }
 
-      rules = local.phpmyadmin_enabled ? {
+      rules = var.domain_name != null ? {
         phpmyadmin = {
           priority = 10
 
@@ -115,7 +100,7 @@ module "alb" {
     wordpress = {
       backend_protocol                  = "HTTP"
       backend_port                      = 80
-      target_type                       = "ip"
+      target_type                       = "instance"
       deregistration_delay              = 5
       load_balancing_cross_zone_enabled = true
       create_attachment                 = false
@@ -132,11 +117,11 @@ module "alb" {
         protocol            = "HTTP"
       }
     }
-    }, local.phpmyadmin_enabled ? {
+    }, var.domain_name != null ? {
     phpmyadmin = {
       backend_protocol                  = "HTTP"
       backend_port                      = 80
-      target_type                       = "ip"
+      target_type                       = "instance"
       deregistration_delay              = 5
       load_balancing_cross_zone_enabled = true
       create_attachment                 = false
@@ -156,7 +141,6 @@ module "alb" {
   } : {})
 
   tags = {
-    Origin     = var.name,
-    DeployedBy = "Terraform"
+    Name = "${local.prefix}-alb"
   }
 }
