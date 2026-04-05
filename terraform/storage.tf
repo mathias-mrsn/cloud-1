@@ -2,19 +2,14 @@ module "kms" {
   source  = "terraform-aws-modules/kms/aws"
   version = "4.2.0"
 
-  providers = {
-    aws = aws.default
-  }
-
-  aliases               = ["${var.name}/efs"]
-  description           = "KMS Key used by EFS Storage - ${var.name}"
+  aliases               = ["${local.prefix}-efs"]
+  description           = "KMS key used by EFS storage"
   enable_default_policy = true
 
   deletion_window_in_days = 7
 
   tags = {
-    Origin     = var.name,
-    DeployedBy = "Terraform"
+    Name = "${local.prefix}-efs-kms"
   }
 }
 
@@ -22,12 +17,8 @@ module "efs" {
   source  = "terraform-aws-modules/efs/aws"
   version = "2.2.0"
 
-  providers = {
-    aws = aws.default
-  }
-
-  name                               = "efs-${var.name}"
-  creation_token                     = "efs-${var.name}"
+  name                               = "${local.prefix}-efs"
+  creation_token                     = "${local.prefix}-efs"
   encrypted                          = true
   kms_key_arn                        = module.kms.key_arn
   attach_policy                      = false
@@ -55,22 +46,19 @@ module "efs" {
   }
 
   security_group_ingress_rules = {
-    ecs = {
-      description                  = "Allow access from ECS Fargate tasks"
-      referenced_security_group_id = aws_security_group.ecs_tasks.id
+    ecs_instances = {
+      description                  = "Allow access from ECS EC2 container instances"
+      referenced_security_group_id = aws_security_group.ecs_instances.id
     }
   }
 
   tags = {
-    Origin     = var.name,
-    DeployedBy = "Terraform"
+    Name = "${local.prefix}-efs"
   }
 
 }
 
 resource "aws_efs_access_point" "wordpress" {
-  provider = aws.default
-
   file_system_id = module.efs.id
 
   posix_user {
@@ -89,7 +77,6 @@ resource "aws_efs_access_point" "wordpress" {
   }
 
   tags = {
-    Origin     = var.name,
-    DeployedBy = "Terraform"
+    Name = "${local.prefix}-wordpress-access-point"
   }
 }
