@@ -47,15 +47,8 @@ output "notifications_topic_arn" {
 }
 
 output "wordpress_ecr_repository_url" {
-  # Exposes the ECR repository URL that stores the managed WordPress image.
-  description = "The ECR repository URL that stores the managed WordPress image."
-  value       = aws_ecr_repository.container["wordpress"].repository_url
-}
-
-output "nginx_ecr_repository_url" {
-  # Exposes the ECR repository URL that stores the managed Nginx image.
-  description = "The ECR repository URL that stores the managed Nginx image."
-  value       = aws_ecr_repository.container["nginx"].repository_url
+  description = "The ECR repository URL that stores the managed WordPress-Apache image."
+  value       = aws_ecr_repository.container["wordpress-apache"].repository_url
 }
 
 output "phpmyadmin_ecr_repository_url" {

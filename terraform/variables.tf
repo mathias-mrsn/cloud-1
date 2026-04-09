@@ -37,33 +37,15 @@ variable "ecs_desired_count" {
   default     = 2
 
   validation {
-    condition     = var.ecs_desired_count >= 2
-    error_message = "The ECS service must keep at least 2 tasks running."
+    condition     = var.ecs_desired_count >= 2 && var.ecs_desired_count <= var.ecs_max_task_count
+    error_message = "ecs_desired_count must be between 2 and ecs_max_task_count."
   }
 }
 
-variable "wordpress_task_cpu" {
-  description = "The CPU units allocated to the WordPress container in the main ECS task."
+variable "ecs_max_task_count" {
+  description = "The maximum number of WordPress ECS tasks allowed for the service."
   type        = number
-  default     = 256
-}
-
-variable "wordpress_task_memory" {
-  description = "The memory in MiB allocated to the WordPress container in the main ECS task."
-  type        = number
-  default     = 512
-}
-
-variable "nginx_task_cpu" {
-  description = "The CPU units allocated to the Nginx container in the main ECS task."
-  type        = number
-  default     = 256
-}
-
-variable "nginx_task_memory" {
-  description = "The memory in MiB allocated to the Nginx container in the main ECS task."
-  type        = number
-  default     = 512
+  default     = 2
 }
 
 variable "ecs_instance_type" {
@@ -115,18 +97,6 @@ variable "phpmyadmin_subdomain" {
   description = "The subdomain used to expose phpMyAdmin when enabled."
   type        = string
   default     = "pma"
-}
-
-variable "phpmyadmin_task_cpu" {
-  description = "The CPU units allocated to the phpMyAdmin ECS task."
-  type        = number
-  default     = 256
-}
-
-variable "phpmyadmin_task_memory" {
-  description = "The memory in MiB allocated to the phpMyAdmin ECS task."
-  type        = number
-  default     = 512
 }
 
 variable "wordpress_shared_root" {
