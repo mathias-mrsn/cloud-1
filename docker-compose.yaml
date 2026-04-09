@@ -23,7 +23,7 @@ services:
       start_period: 20s
 
   wordpress:
-    image: ${WORDPRESS_IMAGE_NAME:-cloud1-wordpress:latest}
+    image: ${WORDPRESS_APACHE_IMAGE_NAME:-cloud1-wordpress-apache:latest}
     build:
       context: .
       dockerfile: docker/wordpress/Dockerfile
@@ -55,38 +55,23 @@ services:
       WORDPRESS_SECURE_AUTH_SALT: ${WORDPRESS_SECURE_AUTH_SALT:-local-secure-auth-salt}
       WORDPRESS_LOGGED_IN_SALT: ${WORDPRESS_LOGGED_IN_SALT:-local-logged-in-salt}
       WORDPRESS_NONCE_SALT: ${WORDPRESS_NONCE_SALT:-local-nonce-salt}
+      ENABLE_LOCAL_STACK: ${ENABLE_LOCAL_STACK:-false}
+      PREFIX: ${PREFIX:-}
+      WORDPRESS_ADMIN_SECRET_ARN: ${WORDPRESS_ADMIN_SECRET_ARN:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      AWS_REGION: ${AWS_REGION:-eu-west-3}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-eu-west-3}
     depends_on:
       db:
-        condition: service_healthy
-    volumes:
-      - wordpress_data:/var/www/wordpress
-    healthcheck:
-      test: ["CMD-SHELL", "php-fpm -t || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
-
-  nginx:
-    image: ${NGINX_IMAGE_NAME:-cloud1-nginx:latest}
-    build:
-      context: .
-      dockerfile: docker/nginx/Dockerfile
-      platforms:
-        - ${DOCKER_PLATFORM:-linux/amd64}
-    restart: unless-stopped
-    environment:
-      WORDPRESS_DOCUMENT_ROOT: /var/www/wordpress
-      WORDPRESS_FPM_HOST: wordpress:9000
-    depends_on:
-      wordpress:
         condition: service_healthy
     ports:
       - "8080:80"
     volumes:
       - wordpress_data:/var/www/wordpress
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost/healthz.php || exit 1"]
+      test: ["CMD-SHELL", "test -f /var/www/wordpress/healthz.php || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 10
