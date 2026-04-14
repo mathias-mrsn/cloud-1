@@ -1,7 +1,4 @@
 resource "aws_security_group" "ecs_instances" {
-  # Creates the security group attached to ECS container instances.
-  # This group is reused by the ALB, Aurora, and EFS rules.
-
   name        = "${local.prefix}-ecs-instances"
   description = "Security group for ECS EC2 container instances"
   vpc_id      = module.vpc.vpc_id
@@ -12,30 +9,22 @@ resource "aws_security_group" "ecs_instances" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "ecs_instances_from_alb" {
-  # Allows the ALB to reach ECS container instances over TCP.
-  # The full port range is open because bridge-mode tasks use dynamic host ports.
-
   security_group_id            = aws_security_group.ecs_instances.id
   referenced_security_group_id = module.alb.security_group_id
-  from_port                    = 0
+  from_port                    = 32768
   to_port                      = 65535
   ip_protocol                  = "tcp"
   description                  = "Allow ALB traffic to ECS container instances"
 }
 
 resource "aws_vpc_security_group_egress_rule" "ecs_instances_all" {
-  # Allows ECS container instances to initiate outbound traffic to any IPv4 address.
-  # The rule targets 0.0.0.0/0, not only the private subnets.
-
   security_group_id = aws_security_group.ecs_instances.id
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "-1"
 }
 
+# checkov:skip=CKV_AWS_341: IMDSv2 hop limit 2 is required so the WordPress container can query EC2 instance metadata.
 module "ecs_autoscaling" {
-  # Creates the Auto Scaling group that provides EC2 capacity for the ECS cluster.
-  # User data mounts EFS and joins each instance to the expected ECS cluster.
-
   source  = "terraform-aws-modules/autoscaling/aws"
   version = "~> 9.0"
 

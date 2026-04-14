@@ -28,11 +28,6 @@ module "efs" {
   security_group_vpc_id              = module.vpc.vpc_id
   enable_backup_policy               = false
 
-  create_replication_configuration = var.backup_region != null
-  replication_configuration_destination = {
-    region = var.backup_region
-  }
-
   policy_statements = {
     mount = {
       actions = ["elasticfilesystem:ClientMount"]
