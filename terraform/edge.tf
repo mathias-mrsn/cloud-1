@@ -21,6 +21,22 @@ module "acm" {
   }
 }
 
+module "acm_alb" {
+  source  = "terraform-aws-modules/acm/aws"
+  version = "6.3.0"
+
+  create_certificate   = var.domain_name != null
+  validate_certificate = var.domain_name != null
+
+  domain_name       = coalesce(local.performance_domain_name, "default")
+  validation_method = "DNS"
+  zone_id           = try(data.aws_route53_zone.current[0].zone_id, null)
+
+  tags = {
+    Name = "${local.prefix}-alb-acm"
+  }
+}
+
 module "cloudfront" {
   source  = "terraform-aws-modules/cloudfront/aws"
   version = "6.4.0"
@@ -37,7 +53,7 @@ module "cloudfront" {
 
   origin = {
     wordpress = {
-      domain_name = module.alb.dns_name
+      domain_name = var.domain_name != null ? local.performance_domain_name : module.alb.dns_name
       origin_id   = module.alb.id
       custom_header = {
         "X-CloudFront-Proto" = "https"
@@ -45,7 +61,7 @@ module "cloudfront" {
       custom_origin_config = {
         http_port              = 80
         https_port             = 443
-        origin_protocol_policy = "http-only"
+        origin_protocol_policy = var.domain_name != null ? "https-only" : "http-only"
         origin_ssl_protocols   = ["TLSv1.2"]
       }
     }
@@ -148,6 +164,15 @@ module "records_domaine_to_main_zone" {
       alias = {
         name    = module.cloudfront.cloudfront_distribution_domain_name
         zone_id = module.cloudfront.cloudfront_distribution_hosted_zone_id
+      }
+    },
+
+    performance = {
+      full_name = local.performance_domain_name
+      type      = "A"
+      alias = {
+        name    = module.alb.dns_name
+        zone_id = module.alb.zone_id
       }
     }
   }
