@@ -1,6 +1,7 @@
 resource "aws_sns_topic" "wordpress" {
-  name         = "${local.prefix}-sns"
-  display_name = "WordPress notifications"
+  name              = "${local.prefix}-sns"
+  display_name      = "WordPress notifications"
+  kms_master_key_id = "alias/aws/sns"
 
   tags = {
     Name = "${local.prefix}-sns"

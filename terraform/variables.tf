@@ -45,7 +45,25 @@ variable "ecs_desired_count" {
 variable "ecs_max_task_count" {
   description = "The maximum number of WordPress ECS tasks allowed for the service."
   type        = number
-  default     = 2
+  default     = 4
+}
+
+variable "ecs_autoscaling_requests_per_target" {
+  description = "The ALB request count per target used to autoscale the WordPress ECS service."
+  type        = number
+  default     = 200
+}
+
+variable "ecs_autoscaling_scale_in_cooldown" {
+  description = "Cooldown in seconds before scaling in WordPress ECS tasks."
+  type        = number
+  default     = 60
+}
+
+variable "ecs_autoscaling_scale_out_cooldown" {
+  description = "Cooldown in seconds before scaling out WordPress ECS tasks."
+  type        = number
+  default     = 60
 }
 
 variable "ecs_instance_type" {
@@ -97,6 +115,12 @@ variable "phpmyadmin_subdomain" {
   description = "The subdomain used to expose phpMyAdmin when enabled."
   type        = string
   default     = "pma"
+}
+
+variable "performance_subdomain" {
+  description = "The subdomain used to expose the direct ALB performance testing endpoint."
+  type        = string
+  default     = "performance"
 }
 
 variable "wordpress_shared_root" {
@@ -168,10 +192,4 @@ variable "aurora_skip_final_snapshot" {
   description = "Whether to skip the final snapshot before deleting the cluster."
   type        = bool
   default     = false
-}
-
-variable "backup_region" {
-  description = "If set, EFS will create a replica in the specified region."
-  type        = string
-  default     = null
 }
