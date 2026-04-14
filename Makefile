@@ -41,7 +41,5 @@ help: ## Show this help message
 	 sort
 
 .PHONY: precommit
-precommit: _require-precommit-hook ## Run precommit check
+precommit: ## Run precommit check
 	@pre-commit run -a
-
-

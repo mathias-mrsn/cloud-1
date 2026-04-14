@@ -6,17 +6,18 @@ services:
       - --default-authentication-plugin=mysql_native_password
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
-    environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-wordpress}
-      MYSQL_USER: ${MYSQL_USER:-wordpress}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-wordpress}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+    env_file:
+      - .env
     ports:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent",
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -30,39 +31,10 @@ services:
       platforms:
         - ${DOCKER_PLATFORM:-linux/amd64}
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-wordpress}
-      WORDPRESS_DB_HOST: ${WORDPRESS_DB_HOST:-db}
-      WORDPRESS_DB_PORT: ${WORDPRESS_DB_PORT:-3306}
-      WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-wordpress}
-      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wordpress}
-      WORDPRESS_TABLE_PREFIX: ${WORDPRESS_TABLE_PREFIX:-wp_}
-      WORDPRESS_SITE_TITLE: ${WORDPRESS_SITE_TITLE:-Cloud-1 Local}
-      WORDPRESS_SITE_URL: ${WORDPRESS_SITE_URL:-http://localhost:8080}
-      WORDPRESS_SITE_HOST: ${WORDPRESS_SITE_HOST:-localhost:8080}
-      WORDPRESS_ADMIN_USER: ${WORDPRESS_ADMIN_USER:-admin}
-      WORDPRESS_ADMIN_PASSWORD: ${WORDPRESS_ADMIN_PASSWORD:-adminpassword}
-      WORDPRESS_ADMIN_EMAIL: ${WORDPRESS_ADMIN_EMAIL:-admin@example.com}
-      WORDPRESS_LOCALE: ${WORDPRESS_LOCALE:-en_US}
-      WORDPRESS_SHARED_ROOT: ${WORDPRESS_SHARED_ROOT:-/var/www/wordpress}
-      WORDPRESS_EFS_DIR: ${WORDPRESS_EFS_DIR:-/var/www/wordpress}
-      WORDPRESS_READINESS_FILE: ${WORDPRESS_READINESS_FILE:-/var/www/wordpress/.health/ready}
-      WORDPRESS_AUTH_KEY: ${WORDPRESS_AUTH_KEY:-local-auth-key}
-      WORDPRESS_SECURE_AUTH_KEY: ${WORDPRESS_SECURE_AUTH_KEY:-local-secure-auth-key}
-      WORDPRESS_LOGGED_IN_KEY: ${WORDPRESS_LOGGED_IN_KEY:-local-logged-in-key}
-      WORDPRESS_NONCE_KEY: ${WORDPRESS_NONCE_KEY:-local-nonce-key}
-      WORDPRESS_AUTH_SALT: ${WORDPRESS_AUTH_SALT:-local-auth-salt}
-      WORDPRESS_SECURE_AUTH_SALT: ${WORDPRESS_SECURE_AUTH_SALT:-local-secure-auth-salt}
-      WORDPRESS_LOGGED_IN_SALT: ${WORDPRESS_LOGGED_IN_SALT:-local-logged-in-salt}
-      WORDPRESS_NONCE_SALT: ${WORDPRESS_NONCE_SALT:-local-nonce-salt}
       ENABLE_LOCAL_STACK: ${ENABLE_LOCAL_STACK:-false}
-      PREFIX: ${PREFIX:-}
-      WORDPRESS_ADMIN_SECRET_ARN: ${WORDPRESS_ADMIN_SECRET_ARN:-}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
-      AWS_REGION: ${AWS_REGION:-eu-west-3}
-      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-eu-west-3}
     depends_on:
       db:
         condition: service_healthy
@@ -85,11 +57,8 @@ services:
       platforms:
         - ${DOCKER_PLATFORM:-linux/amd64}
     restart: unless-stopped
-    environment:
-      PMA_HOST: ${PMA_HOST:-db}
-      PMA_PORT: ${PMA_PORT:-3306}
-      PMA_ARBITRARY: ${PMA_ARBITRARY:-0}
-      PMA_ABSOLUTE_URI: ${PMA_ABSOLUTE_URI:-http://localhost:8081/}
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy

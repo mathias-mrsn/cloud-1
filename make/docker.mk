@@ -5,8 +5,15 @@ BUILDX_BUILDER_NAME ?= default
 BUILDX_BUILDER ?= $(BUILDX_BUILDER_NAME)
 WORDPRESS_APACHE_IMAGE_NAME ?= cloud1-wordpress-apache:latest
 PHPMYADMIN_IMAGE_NAME ?= cloud1-phpmyadmin:latest
-ENABLE_LOCAL_STACK ?= false
+ENABLE_LOCAL_STACK ?= true
+DETACH_CONTAINERS ?= true
 LOCAL_STACK_SERVICES ?= db wordpress phpmyadmin
+
+SIEGE_URL ?= https://performance.mamaurai.fr/
+SIEGE_CONCURRENCY ?= 80
+SIEGE_DURATION ?= 10M
+SIEGE_DELAY ?= 0
+SIEGE_FILE ?=
 
 export DOCKER_PLATFORM
 export BUILDX_BUILDER
@@ -28,6 +35,13 @@ endif
 ifeq ($(strip $(ENABLE_LOCAL_STACK)),true)
 	SERVICES = $(LOCAL_STACK_SERVICES)
 endif
+
+ifeq ($(strip $(DETACH_CONTAINERS)),true)
+	DOCKER_UP_FLAGS = -d
+else
+	DOCKER_UP_FLAGS =
+endif
+
 .PHONY: docker-build
 docker-build: ## Build docker compose services with an existing buildx builder
 	@docker buildx use "$(BUILDX_BUILDER_NAME)" >/dev/null
@@ -41,18 +55,32 @@ docker-up: ## Start the local Docker stack (requires ENABLE_LOCAL_STACK=true)
 		echo "docker-up requires ENABLE_LOCAL_STACK=true" >&2; \
 		exit 1; \
 	fi
-	@$(DOCKER_COMPOSE_CMD) up -d $(SERVICES)
+	@$(DOCKER_COMPOSE_CMD) up $(DOCKER_UP_FLAGS) $(SERVICES)
 
 .PHONY: docker-down
-docker-down: ## Stop the local Docker stack (requires ENABLE_LOCAL_STACK=true)
+docker-down: ## Stop the local Docker stack and remove its volumes (requires ENABLE_LOCAL_STACK=true)
 	@if [ "$(ENABLE_LOCAL_STACK)" != "true" ]; then \
 		echo "docker-down requires ENABLE_LOCAL_STACK=true" >&2; \
 		exit 1; \
 	fi
-	@$(DOCKER_COMPOSE_CMD) down
+	@$(DOCKER_COMPOSE_CMD) down -v
+
+.PHONY: docker-reset
+docker-reset: ## Rebuild and restart the local Docker stack (requires ENABLE_LOCAL_STACK=true)
+	@$(MAKE) docker-down ENABLE_LOCAL_STACK=$(ENABLE_LOCAL_STACK)
+	@$(MAKE) docker-up ENABLE_LOCAL_STACK=$(ENABLE_LOCAL_STACK)
 
 .PHONY: docker-version
 docker-version: ## Show docker and docker compose versions
 	@command -v docker >/dev/null
 	@docker --version
 	@docker compose version
+
+.PHONY: siege
+siege: ## Run a siege load test against the deployed site
+	@command -v siege >/dev/null
+	@if [ -n "$(SIEGE_FILE)" ]; then \
+		siege -c $(SIEGE_CONCURRENCY) -t $(SIEGE_DURATION) -d $(SIEGE_DELAY) -f "$(SIEGE_FILE)"; \
+	else \
+		siege -c $(SIEGE_CONCURRENCY) -t $(SIEGE_DURATION) -d $(SIEGE_DELAY) "$(SIEGE_URL)"; \
+	fi

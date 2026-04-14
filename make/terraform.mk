@@ -76,7 +76,7 @@ terraform-output-env:  ## Retrieve terraform output values in shell variable for
 .PHONY: terraform-output-env-export
 terraform-output-env-export: ## Retrieve terraform output values as shell export statements (export KEY=VALUE).
 	@$(MAKE) _terraform_output | jq -r 'to_entries[] | "export \(.key)=\(.value.value)"'
-	
+
 
 AWS_REGION := $(shell jq -r '.aws_region // .region // empty' $(TFVARS_FILE) 2>/dev/null)
 AWS_ACCOUNT_ID := $(shell jq -r '.aws_account_id // empty' $(TFVARS_FILE) 2>/dev/null)
