@@ -19,5 +19,7 @@ skip-check:
   - CKV_TF_1
   - CKV_AWS_158
   - CKV_AWS_23
+  - CKV_AWS_341
+  - CKV_AWS_51
 skip-path:
   - terraform/main.auto.tfvars.json

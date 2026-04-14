@@ -8,3 +8,4 @@ terraform/.external_modules/
 terraform_outputs.json
 **/.DS_Store
 **/tfplan
+**/*.pdf

@@ -43,6 +43,7 @@ ECS_CONTAINER_INSTANCE_TAGS=${ecs_container_tags_json}
 ECS_ENABLE_TASK_IAM_ROLE=true
 ECS_ENABLE_TASK_IAM_ROLE_NETWORK_HOST=true
 ECS_ENABLE_SPOT_INSTANCE_DRAINING=true
+ECS_CONTAINER_START_TIMEOUT=10m
 ECS_AVAILABLE_LOGGING_DRIVERS=["json-file","awslogs"]
 EOF
 
@@ -62,6 +63,12 @@ for attempt in $(seq 1 10); do
 
         sleep 15
 done
+
+if ! mountpoint -q ${efs_mount_point}; then
+        systemctl stop ecs || true
+        shutdown -h now
+        exit 1
+fi
 
 mkdir -p ${wordpress_host_path}
 chown -R 33:33 ${wordpress_host_path}
