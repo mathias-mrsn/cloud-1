@@ -17,11 +17,18 @@ locals {
   }
 }
 
+# checkov:skip=CKV_AWS_51: The deployment workflow republishes the mutable latest tag on each apply, so immutable tags would break image updates.
 resource "aws_ecr_repository" "container" {
   for_each = toset(["wordpress-apache", "phpmyadmin"])
 
-  name         = "${local.prefix}-${each.value}"
-  force_delete = true
+  name                 = "${local.prefix}-${each.value}"
+  force_delete         = true
+  image_tag_mutability = "MUTABLE"
+
+  encryption_configuration {
+    encryption_type = "KMS"
+    kms_key         = module.kms.key_arn
+  }
 
   image_scanning_configuration {
     scan_on_push = true
@@ -41,7 +48,7 @@ resource "terraform_data" "container_images_build" {
   ]
 
   provisioner "local-exec" {
-    command     = "make docker-build WORDPRESS_APACHE_IMAGE_NAME=${local.managed_container_image_names.wordpress_apache} PHPMYADMIN_IMAGE_NAME=${local.managed_container_image_names.phpmyadmin} DOCKER_PLATFORM=linux/amd64"
+    command     = "make docker-build WORDPRESS_APACHE_IMAGE_NAME=${local.managed_container_image_names.wordpress_apache} PHPMYADMIN_IMAGE_NAME=${local.managed_container_image_names.phpmyadmin} DOCKER_PLATFORM=linux/amd64 ENABLE_LOCAL_STACK=false"
     working_dir = path.cwd
   }
 }
@@ -65,6 +72,7 @@ resource "aws_secretsmanager_secret" "wordpress_admin_credentials" {
   name                    = "/cloud1/wordpress/users/admin/credentials"
   description             = "WordPress admin credentials"
   recovery_window_in_days = 0
+  kms_key_id              = module.kms.key_arn
 
   tags = {
     Name = "${local.prefix}-wordpress-admin-credentials"
@@ -116,7 +124,7 @@ module "ecs_cluster" {
           maximum_scaling_step_size = 1
           minimum_scaling_step_size = 1
           status                    = "ENABLED"
-          target_capacity           = 100
+          target_capacity           = 80
         }
       }
     }
@@ -146,6 +154,8 @@ module "ecs_service_wordpress" {
   family      = "${local.prefix}-wordpress"
   cluster_arn = module.ecs_cluster.arn
 
+  cpu                      = null
+  memory                   = null
   desired_count            = var.ecs_desired_count
   network_mode             = "bridge"
   requires_compatibilities = ["EC2"]
@@ -191,10 +201,27 @@ module "ecs_service_wordpress" {
   health_check_grace_period_seconds  = 600
   deployment_minimum_healthy_percent = 50
   deployment_maximum_percent         = 200
-  enable_autoscaling                 = false
-  force_delete                       = true
-  force_new_deployment               = true
-  propagate_tags                     = "SERVICE"
+  enable_autoscaling                 = true
+  autoscaling_min_capacity           = var.ecs_desired_count
+  autoscaling_max_capacity           = var.ecs_max_task_count
+  autoscaling_policies = {
+    requests = {
+      policy_type = "TargetTrackingScaling"
+
+      target_tracking_scaling_policy_configuration = {
+        predefined_metric_specification = {
+          predefined_metric_type = "ALBRequestCountPerTarget"
+          resource_label         = "${module.alb.arn_suffix}/${module.alb.target_groups["wordpress"].arn_suffix}"
+        }
+        target_value       = var.ecs_autoscaling_requests_per_target
+        scale_in_cooldown  = var.ecs_autoscaling_scale_in_cooldown
+        scale_out_cooldown = var.ecs_autoscaling_scale_out_cooldown
+      }
+    }
+  }
+  force_delete         = true
+  force_new_deployment = true
+  propagate_tags       = "SERVICE"
 
   ordered_placement_strategy = [{
     type  = "spread"
@@ -227,6 +254,7 @@ module "ecs_service_wordpress" {
       name                   = "wordpress"
       image                  = local.managed_container_image_names.wordpress_apache
       essential              = true
+      memoryReservation      = 256
       readonlyRootFilesystem = false
 
       secrets = [
@@ -309,6 +337,8 @@ module "ecs_service_phpmyadmin" {
   family      = "${local.prefix}-phpmyadmin"
   cluster_arn = module.ecs_cluster.arn
 
+  cpu                      = null
+  memory                   = null
   desired_count            = 1
   network_mode             = "bridge"
   requires_compatibilities = ["EC2"]
@@ -353,6 +383,7 @@ module "ecs_service_phpmyadmin" {
       name                   = "phpmyadmin"
       image                  = local.managed_container_image_names.phpmyadmin
       essential              = true
+      memoryReservation      = 128
       readonlyRootFilesystem = false
 
       environment = [

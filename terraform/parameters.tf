@@ -24,6 +24,10 @@ locals {
       type  = "String"
       value = "https://${coalesce(var.domain_name, module.cloudfront.cloudfront_distribution_domain_name)}"
     }
+    "/${local.prefix}/wordpress/performance_url" = {
+      type  = "String"
+      value = local.performance_domain_name != null ? "https://${local.performance_domain_name}" : "https://${coalesce(var.domain_name, module.cloudfront.cloudfront_distribution_domain_name)}"
+    }
     "/${local.prefix}/wordpress/auth_key" = {
       type  = "SecureString"
       value = random_password.wordpress_secret_key["auth_key"].result
