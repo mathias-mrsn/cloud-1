@@ -2,143 +2,213 @@
   <img src="./.images/banner.jpg" alt="banner">
 </p>
 
----
+> Deploys a highly available WordPress platform on AWS with Terraform, plus a local Docker workflow for manual testing.
 
-> Complete WordPress architecture deployed on AWS.
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
+![Terraform](https://img.shields.io/badge/Terraform_version-~%3E1.13.4-blue)
+![AWS Provider](https://img.shields.io/badge/AWS_provider-~%3E6.34-blue)
 
-## 🗂️ Table of Contents
+## Table of Contents
 
-* [⛔️ Warning](#-warning)
-* [❓ What is it](#-what-is-it)
-* [📊 Prerequisites](#-prerequisites)
-* [🔧 Installation](#-installation)
-* [🚀 Terraform Deployment](#-terraform-deployment)
-* [🏫 42 Correction Deployment](#-42-correction-deployment)
+<!--TOC-->
+
+- [Table of Contents](#table-of-contents)
+- [⛔️ Warning](#-warning)
+- [Introduction](#introduction)
+- [Infrastructure diagram](#infrastructure-diagram)
+- [⚠️ Important notes](#-important-notes)
+- [Architecture overview](#architecture-overview)
+- [Installation](#installation)
+  - [Prerequisites](#prerequisites)
+  - [1. Configure AWS access](#1-configure-aws-access)
+  - [2. Review your Terraform variables](#2-review-your-terraform-variables)
+  - [3. Initialize Terraform](#3-initialize-terraform)
+  - [4. Plan the infrastructure](#4-plan-the-infrastructure)
+  - [5. Apply the infrastructure](#5-apply-the-infrastructure)
+  - [6. Destroy the infrastructure](#6-destroy-the-infrastructure)
+- [Local Docker workflow](#local-docker-workflow)
+  - [Prerequisites](#prerequisites-1)
+  - [1. Create your local .env file](#1-create-your-local-env-file)
+  - [2. Start the local stack](#2-start-the-local-stack)
+  - [3. Stop or reset the local stack](#3-stop-or-reset-the-local-stack)
+- [Load testing](#load-testing)
+- [Terraform docs](#terraform-docs)
+
+<!--TOC-->
 
 ## ⛔️ Warning
 
-This architecture, once deployed, may incur costs as not all resources are covered under the AWS free tier. If you set the `domain_name` variable, ensure you have a hosted zone for this domain name in the same AWS account used to deploy the infrastructure.
+The sharing of this project on my GitHub aims to help peoples to open their minds to new logics or help peoples in case of difficulty. In no way, that aims to copy and paste this work on your own repository.
 
-## ❓ What is it
+## Introduction
 
-This project is designed to deploy a fully functional WordPress website using AWS as the cloud provider. The architecture ensures high availability, resilience to availability zone (AZ) failures, and scalability. The deployment is managed through Terraform and includes the following components:
+The aim of this project is to create and deploy a WordPress architecture in the cloud. The goal of deploying this kind of architecture in the cloud is to have a solution that can automatically scale in and out based on the current load, ensure high availability, take advantage of major cloud provider managed services, and avoid having to keep your Mac on all day to host your website.
 
-![Architecture](./.images/archi.png)
+In this project, you will find an architecture hosted on AWS and deployed using Terraform that aims to accomplish all the key points previously mentioned about the cloud.
 
-### Architecture Breakdown
+## Infrastructure diagram
 
-- **Route 53**: Amazon's DNS service for creating DNS records for your domain.
-- **CloudFront**: Provides access to AWS edge locations for faster content delivery and caching of WordPress assets.
-- **Application Load Balancer**: Routes traffic to the ECS service running WordPress.
-- **Aurora Serverless Cluster**: A highly available, multi-AZ, fully managed MySQL database service.
-- **ECS Fargate**: Runs two WordPress tasks across private subnets without managing EC2 instances.
-- **Elastic File System (EFS)**: A shared file system for WordPress instances to access common resources.
+![Infrastructure Diagram](./.images/archi.png)
 
-## 📊 Prerequisites
+## ⚠️ Important notes
 
-Ensure the following tools are installed before deploying the architecture:
+**AWS costs**: this infrastructure is not limited to free-tier resources. Running the full stack can incur charges.
 
-- [Terraform](https://www.terraform.io)
-- [AWS CLI](https://github.com/aws/aws-cli)
+**Hosted zone requirement**: the domain used in `domain_name` must already exist as a Route53 hosted zone in the same AWS account.
 
-## 🔧 Installation
+## Architecture overview
 
-### AWS CLI Configuration
+The currently deployed traffic paths are:
 
-Set up AWS CLI with your credentials:
+- `mamaurai.fr`
+  - Route53 → CloudFront → ALB → WordPress ECS service
+- `pma.mamaurai.fr`
+  - Route53 → CloudFront → ALB → phpMyAdmin ECS service
+- `performance.mamaurai.fr`
+  - Route53 → direct HTTPS to ALB → WordPress ECS service
+
+WordPress containers run on **ECS EC2 instances** in private subnets.
+
+- The EC2 instances mount **EFS** on the host.
+- WordPress uses the shared EFS content path from the host.
+- WordPress connects to **Aurora MySQL** in the database subnets.
+
+## Installation
+
+### Prerequisites
+
+Before deploying the AWS infrastructure, make sure you have:
+
+| Requirement | Description |
+|-------------|-------------|
+| Terraform | Version `~> 1.13.4` |
+| AWS CLI | Configured with credentials that can create the deployed resources |
+| Docker | Required for local image builds during Terraform apply |
+| jq | Used by Make and helper scripts |
+| Route53 hosted zone | Must already exist for the chosen public domain |
+
+### 1. Configure AWS access
+
+Configure the AWS CLI with credentials that can manage the full infrastructure:
 
 ```sh
 aws configure
 ```
 
-## 🚀 Terraform Deployment
+### 2. Review your Terraform variables
 
-### Initialization
+The repository uses:
 
-Navigate to the `terraform/` directory and initialize the Terraform environment:
-
-```sh
-terraform init
+```text
+terraform/main.auto.tfvars.json
 ```
 
-### Pre-commit Checks
+Review it carefully before deployment.
 
-Install and run the repository hooks:
+### 3. Initialize Terraform
 
 ```sh
-pre-commit install --install-hooks
-pre-commit install --hook-type commit-msg
-pre-commit run --all-files
+make terraform-init
 ```
 
-### Terraform Variables
+### 4. Plan the infrastructure
 
-This section is generated automatically from the Terraform code.
+```sh
+make terraform-plan
+```
+
+### 5. Apply the infrastructure
+
+```sh
+make terraform-apply
+```
+
+### 6. Destroy the infrastructure
+
+```sh
+make terraform-destroy
+```
+
+## Local Docker workflow
+
+### Prerequisites
+
+The local stack uses Docker Compose and a local MySQL container.
+
+### 1. Create your local .env file
+
+Create a local `.env` file from the template:
+
+```sh
+cp .env.template .env
+```
+
+Then set at minimum:
+
+```env
+ENABLE_LOCAL_STACK=true
+```
+
+You can also provide AWS credentials in `.env` if you want the local WordPress bootstrap to fetch secrets and SSM parameters.
+
+### 2. Start the local stack
+
+```sh
+make docker-up ENABLE_LOCAL_STACK=true
+```
+
+Local entrypoints:
+
+- WordPress: `http://localhost:8080`
+- phpMyAdmin: `http://localhost:8081`
+
+### 3. Stop or reset the local stack
+
+Stop the stack:
+
+```sh
+make docker-down ENABLE_LOCAL_STACK=true
+```
+
+Rebuild and restart it:
+
+```sh
+make docker-reset ENABLE_LOCAL_STACK=true
+```
+
+If you want logs in the foreground when starting the stack:
+
+```sh
+make docker-up ENABLE_LOCAL_STACK=true DETACH_CONTAINERS=false
+```
+
+## Load testing
+
+The repository includes a `siege` target for quick load tests.
+
+Default usage:
+
+```sh
+make siege
+```
+
+Example against the performance hostname:
+
+```sh
+make siege SIEGE_CONCURRENCY=80 SIEGE_DURATION=10M SIEGE_DELAY=0
+```
+
+Useful variables:
+
+- `SIEGE_URL`
+- `SIEGE_CONCURRENCY`
+- `SIEGE_DURATION`
+- `SIEGE_DELAY`
+- `SIEGE_FILE`
+
+## Terraform docs
+
+_This section is intended for generated Terraform documentation._
 
 <!-- BEGIN_TF_DOCS -->
 <!-- END_TF_DOCS -->
-
-### Applying the Configuration
-
-Deploy the infrastructure using:
-
-```sh
-terraform apply
-```
-
-### Outputs
-
-After deployment, Terraform prints the generated outputs in the terminal. The inputs and outputs reference above is maintained automatically by `terraform-docs`.
-
-### Running a Startup Script in the WordPress Container
-
-You can define `wordpress_startup_script` to execute shell commands each time the WordPress container starts. The script runs just before Apache starts, so keep it idempotent.
-
-```hcl
-wordpress_startup_script = <<-EOT
-  wp plugin is-installed redis-cache --path=/var/www/html --allow-root || \
-    wp plugin install redis-cache --activate --path=/var/www/html --allow-root
-EOT
-```
-
-### Destroying the Infrastructure
-
-To delete all resources:
-
-```sh
-terraform destroy
-```
-
-## 🏫 42 Correction Deployment
-
-To meet 42's requirements, you can deploy the architecture using a `docker-compose` file with Terraform's official Docker image.
-
-### Initialization
-
-1. Create a `.env` file based on `.env.template` and update it with your credentials.
-2. Initialize the Terraform environment using Docker Compose:
-
-```sh
-docker-compose run --rm terraform init
-```
-
-### Applying the Configuration
-
-Deploy the infrastructure with Docker Compose:
-
-```sh
-docker-compose run --rm terraform apply -auto-approve
-```
-
-### Destroying the Infrastructure
-
-Delete all resources using Docker Compose:
-
-```sh
-docker-compose run --rm terraform destroy -auto-approve
-```
-
-## 👥 Authors
-
-- [@mathias-mrsn](https://github.com/mathias-mrsn)
-- [@xchalle](https://github.com/xchalle)
