@@ -40,12 +40,6 @@ output "ecs_service_wordpress_name" {
   value       = module.ecs_service_wordpress.name
 }
 
-output "notifications_topic_arn" {
-  # Exposes the SNS topic ARN used for operational notifications.
-  description = "The SNS topic ARN for WordPress operational notifications."
-  value       = aws_sns_topic.wordpress.arn
-}
-
 output "wordpress_ecr_repository_url" {
   description = "The ECR repository URL that stores the managed WordPress-Apache image."
   value       = aws_ecr_repository.container["wordpress-apache"].repository_url

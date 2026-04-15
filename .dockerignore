@@ -8,4 +8,6 @@ terraform/*.tfstate.*
 terraform/*.tfplan
 terraform/tfplan
 terraform/backend.json
+
+**/.external_modules
 **/.DS_Store
