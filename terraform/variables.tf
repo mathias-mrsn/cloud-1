@@ -187,9 +187,3 @@ variable "aurora_instances" {
   type        = map(any)
   default     = { one = {} }
 }
-
-variable "aurora_skip_final_snapshot" {
-  description = "Whether to skip the final snapshot before deleting the cluster."
-  type        = bool
-  default     = false
-}

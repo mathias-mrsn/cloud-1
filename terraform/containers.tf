@@ -35,7 +35,13 @@ resource "aws_ecr_repository" "container" {
   }
 
   tags = {
-    Name = "${local.prefix}-${each.value}"
+    Name       = "${local.prefix}-${each.value}"
+    git_commit = "442e87b23ae4faf0c9944bee932d85b94c780215"
+    git_file   = "terraform/containers.tf"
+    git_org    = "mathias-mrsn"
+    git_repo   = "cloud-1"
+    yor_name   = "container"
+    yor_trace  = "fdbc117b-b064-44e1-ba8e-44870d6527d5"
   }
 }
 
@@ -75,7 +81,13 @@ resource "aws_secretsmanager_secret" "wordpress_admin_credentials" {
   kms_key_id              = module.kms.key_arn
 
   tags = {
-    Name = "${local.prefix}-wordpress-admin-credentials"
+    Name       = "${local.prefix}-wordpress-admin-credentials"
+    git_commit = "442e87b23ae4faf0c9944bee932d85b94c780215"
+    git_file   = "terraform/containers.tf"
+    git_org    = "mathias-mrsn"
+    git_repo   = "cloud-1"
+    yor_name   = "wordpress_admin_credentials"
+    yor_trace  = "62d00cae-755b-4969-bc3f-ddcd9dfb756d"
   }
 }
 
@@ -89,7 +101,6 @@ resource "aws_secretsmanager_secret_version" "wordpress_admin_credentials" {
 
   secret_string_wo = jsonencode({
     username    = var.wp_admin_username
-    admin_user  = var.wp_admin_username
     admin_email = var.wp_admin_email
     password    = ephemeral.random_password.wordpress_admin_password.result
   })
@@ -124,7 +135,7 @@ module "ecs_cluster" {
           maximum_scaling_step_size = 1
           minimum_scaling_step_size = 1
           status                    = "ENABLED"
-          target_capacity           = 80
+          target_capacity           = 100
         }
       }
     }
@@ -140,7 +151,13 @@ module "ecs_cluster" {
   create_cloudwatch_log_group = false
 
   tags = {
-    Name = "${local.prefix}-ecs-cluster"
+    Name       = "${local.prefix}-ecs-cluster"
+    git_commit = "N/A"
+    git_file   = "terraform/containers.tf"
+    git_org    = "mathias-mrsn"
+    git_repo   = "cloud-1"
+    yor_name   = "ecs_cluster"
+    yor_trace  = "11595efb-5558-4616-88b7-630a1bfef7ad"
   }
 }
 
@@ -321,7 +338,13 @@ module "ecs_service_wordpress" {
   }
 
   tags = {
-    Name = "${local.prefix}-wordpress"
+    Name       = "${local.prefix}-wordpress"
+    git_commit = "442e87b23ae4faf0c9944bee932d85b94c780215"
+    git_file   = "terraform/containers.tf"
+    git_org    = "mathias-mrsn"
+    git_repo   = "cloud-1"
+    yor_name   = "ecs_service_wordpress"
+    yor_trace  = "03bac99d-9a20-4341-b321-944597caca38"
   }
 }
 
@@ -437,6 +460,12 @@ module "ecs_service_phpmyadmin" {
   }
 
   tags = {
-    Name = "${local.prefix}-phpmyadmin"
+    Name       = "${local.prefix}-phpmyadmin"
+    git_commit = "442e87b23ae4faf0c9944bee932d85b94c780215"
+    git_file   = "terraform/containers.tf"
+    git_org    = "mathias-mrsn"
+    git_repo   = "cloud-1"
+    yor_name   = "ecs_service_phpmyadmin"
+    yor_trace  = "9484a506-1414-4c51-b1ab-5c7a2d2ad0da"
   }
 }

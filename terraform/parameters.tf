@@ -87,6 +87,12 @@ resource "aws_ssm_parameter" "wordpress_runtime" {
   value = each.value.value
 
   tags = {
-    Name = replace(trimprefix(each.key, "/"), "/", "-")
+    Name       = replace(trimprefix(each.key, "/"), "/", "-")
+    git_commit = "44406d3b5d909b6b1e277e6f5389544c03a243eb"
+    git_file   = "terraform/parameters.tf"
+    git_org    = "mathias-mrsn"
+    git_repo   = "cloud-1"
+    yor_name   = "wordpress_runtime"
+    yor_trace  = "216b8410-c7b4-4f93-a638-d5fa7ec91e3d"
   }
 }

@@ -34,7 +34,13 @@ module "vpc" {
   create_igw         = true
 
   tags = {
-    Name = "${local.prefix}-vpc"
+    Name       = "${local.prefix}-vpc"
+    git_commit = "10c52b75dc0023d7c16f25f72703851e88ac9c20"
+    git_file   = "terraform/network.tf"
+    git_org    = "mathias-mrsn"
+    git_repo   = "cloud-1"
+    yor_name   = "vpc"
+    yor_trace  = "c97e8b4d-fad4-4396-a978-80e80367b1da"
   }
 }
 
@@ -138,7 +144,13 @@ module "vpc_endpoints" {
   }
 
   tags = {
-    Name = "${local.prefix}-vpc-endpoints"
+    Name       = "${local.prefix}-vpc-endpoints"
+    git_commit = "802082bf549a8f2b094eb3434dd4b52824dfb7ae"
+    git_file   = "terraform/network.tf"
+    git_org    = "mathias-mrsn"
+    git_repo   = "cloud-1"
+    yor_name   = "vpc_endpoints"
+    yor_trace  = "2c52661b-4dda-4694-8919-eed68ae427ec"
   }
 }
 
@@ -284,6 +296,12 @@ module "alb" {
   } : {})
 
   tags = {
-    Name = "${local.prefix}-alb"
+    Name       = "${local.prefix}-alb"
+    git_commit = "802082bf549a8f2b094eb3434dd4b52824dfb7ae"
+    git_file   = "terraform/network.tf"
+    git_org    = "mathias-mrsn"
+    git_repo   = "cloud-1"
+    yor_name   = "alb"
+    yor_trace  = "dba1f7ab-df75-47ac-b736-4f49a0ab2adc"
   }
 }

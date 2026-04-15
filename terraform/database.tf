@@ -13,7 +13,7 @@ module "aurora" {
   master_username             = var.aurora_master_username
   manage_master_user_password = true
   apply_immediately           = true
-  skip_final_snapshot         = var.aurora_skip_final_snapshot
+  skip_final_snapshot         = true
   cluster_instance_class      = "db.serverless"
   instances                   = var.aurora_instances
 
@@ -33,6 +33,12 @@ module "aurora" {
   }
 
   tags = {
-    Name = "${local.prefix}-aurora"
+    Name       = "${local.prefix}-aurora"
+    git_commit = "2a4f56d4539e2a0165b1f39b93759876ef2ad15f"
+    git_file   = "terraform/database.tf"
+    git_org    = "mathias-mrsn"
+    git_repo   = "cloud-1"
+    yor_name   = "aurora"
+    yor_trace  = "194d253a-63bd-41ac-947a-b83c8676c0cf"
   }
 }

@@ -17,7 +17,13 @@ module "acm" {
   zone_id           = try(data.aws_route53_zone.current[0].zone_id, null)
 
   tags = {
-    Name = "${local.prefix}-acm"
+    Name       = "${local.prefix}-acm"
+    git_commit = "10c52b75dc0023d7c16f25f72703851e88ac9c20"
+    git_file   = "terraform/edge.tf"
+    git_org    = "mathias-mrsn"
+    git_repo   = "cloud-1"
+    yor_name   = "acm"
+    yor_trace  = "8e7b89b8-cd14-473b-b36a-2b318acfc982"
   }
 }
 
@@ -33,7 +39,13 @@ module "acm_alb" {
   zone_id           = try(data.aws_route53_zone.current[0].zone_id, null)
 
   tags = {
-    Name = "${local.prefix}-alb-acm"
+    Name       = "${local.prefix}-alb-acm"
+    git_commit = "802082bf549a8f2b094eb3434dd4b52824dfb7ae"
+    git_file   = "terraform/edge.tf"
+    git_org    = "mathias-mrsn"
+    git_repo   = "cloud-1"
+    yor_name   = "acm_alb"
+    yor_trace  = "cc982d91-0ceb-4101-b580-72cbdc1506cd"
   }
 }
 
@@ -135,7 +147,13 @@ module "cloudfront" {
   })
 
   tags = {
-    Name = "${local.prefix}-cloudfront"
+    Name       = "${local.prefix}-cloudfront"
+    git_commit = "802082bf549a8f2b094eb3434dd4b52824dfb7ae"
+    git_file   = "terraform/edge.tf"
+    git_org    = "mathias-mrsn"
+    git_repo   = "cloud-1"
+    yor_name   = "cloudfront"
+    yor_trace  = "7781623d-3d4d-4426-8104-82a0805a16a1"
   }
 }
 
@@ -175,5 +193,13 @@ module "records_domaine_to_main_zone" {
         zone_id = module.alb.zone_id
       }
     }
+  }
+  tags = {
+    git_commit = "802082bf549a8f2b094eb3434dd4b52824dfb7ae"
+    git_file   = "terraform/edge.tf"
+    git_org    = "mathias-mrsn"
+    git_repo   = "cloud-1"
+    yor_name   = "records_domaine_to_main_zone"
+    yor_trace  = "ad759266-282b-4712-9127-216d3c62865f"
   }
 }

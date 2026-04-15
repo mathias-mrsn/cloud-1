@@ -9,7 +9,13 @@ module "kms" {
   deletion_window_in_days = 7
 
   tags = {
-    Name = "${local.prefix}-efs-kms"
+    Name       = "${local.prefix}-efs-kms"
+    git_commit = "2a4f56d4539e2a0165b1f39b93759876ef2ad15f"
+    git_file   = "terraform/storage.tf"
+    git_org    = "mathias-mrsn"
+    git_repo   = "cloud-1"
+    yor_name   = "kms"
+    yor_trace  = "2c7b14d1-8900-49ee-98a5-964ed1852eb4"
   }
 }
 
@@ -48,7 +54,13 @@ module "efs" {
   }
 
   tags = {
-    Name = "${local.prefix}-efs"
+    Name       = "${local.prefix}-efs"
+    git_commit = "2a4f56d4539e2a0165b1f39b93759876ef2ad15f"
+    git_file   = "terraform/storage.tf"
+    git_org    = "mathias-mrsn"
+    git_repo   = "cloud-1"
+    yor_name   = "efs"
+    yor_trace  = "6b2c6bd1-ab61-4967-abea-6f66fecd75a9"
   }
 
 }
@@ -72,6 +84,8 @@ resource "aws_efs_access_point" "wordpress" {
   }
 
   tags = {
-    Name = "${local.prefix}-wordpress-access-point"
+    Name      = "${local.prefix}-wordpress-access-point"
+    yor_name  = "wordpress"
+    yor_trace = "6169a5f0-bf39-4eaa-a7d7-732e8c474384"
   }
 }
