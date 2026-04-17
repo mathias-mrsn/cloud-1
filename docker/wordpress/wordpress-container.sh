@@ -145,5 +145,5 @@ fi
 cp /opt/cloud1/wordpress-mu-plugins/cloud1-instance-ip.php "${WP_MU_PLUGIN_DIR}/cloud1-instance-ip.php"
 chown -R www-data:www-data "$WP_ROOT"
 
-log "Starting Apache"
+log "Starting PHP-FPM"
 exec "$@"
