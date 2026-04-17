@@ -27,28 +27,6 @@ module "acm" {
   }
 }
 
-module "acm_alb" {
-  source  = "terraform-aws-modules/acm/aws"
-  version = "6.3.0"
-
-  create_certificate   = var.domain_name != null
-  validate_certificate = var.domain_name != null
-
-  domain_name       = coalesce(local.performance_domain_name, "default")
-  validation_method = "DNS"
-  zone_id           = try(data.aws_route53_zone.current[0].zone_id, null)
-
-  tags = {
-    Name       = "${local.prefix}-alb-acm"
-    git_commit = "802082bf549a8f2b094eb3434dd4b52824dfb7ae"
-    git_file   = "terraform/edge.tf"
-    git_org    = "mathias-mrsn"
-    git_repo   = "cloud-1"
-    yor_name   = "acm_alb"
-    yor_trace  = "cc982d91-0ceb-4101-b580-72cbdc1506cd"
-  }
-}
-
 module "cloudfront" {
   source  = "terraform-aws-modules/cloudfront/aws"
   version = "6.4.0"
@@ -65,7 +43,7 @@ module "cloudfront" {
 
   origin = {
     wordpress = {
-      domain_name = var.domain_name != null ? local.performance_domain_name : module.alb.dns_name
+      domain_name = module.alb.dns_name
       origin_id   = module.alb.id
       custom_header = {
         "X-CloudFront-Proto" = "https"
@@ -73,7 +51,7 @@ module "cloudfront" {
       custom_origin_config = {
         http_port              = 80
         https_port             = 443
-        origin_protocol_policy = var.domain_name != null ? "https-only" : "http-only"
+        origin_protocol_policy = "http-only"
         origin_ssl_protocols   = ["TLSv1.2"]
       }
     }
@@ -184,15 +162,6 @@ module "records_domaine_to_main_zone" {
         zone_id = module.cloudfront.cloudfront_distribution_hosted_zone_id
       }
     },
-
-    performance = {
-      full_name = local.performance_domain_name
-      type      = "A"
-      alias = {
-        name    = module.alb.dns_name
-        zone_id = module.alb.zone_id
-      }
-    }
   }
   tags = {
     git_commit = "802082bf549a8f2b094eb3434dd4b52824dfb7ae"

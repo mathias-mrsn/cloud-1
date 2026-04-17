@@ -217,38 +217,6 @@ module "alb" {
         }
       } : {}
     }
-
-    performance = {
-      port            = 443
-      protocol        = "HTTPS"
-      certificate_arn = module.acm_alb.acm_certificate_arn
-
-      forward = {
-        target_group_key = "wordpress"
-      }
-
-      rules = var.domain_name != null ? {
-        phpmyadmin = {
-          priority = 10
-
-          actions = [
-            {
-              forward = {
-                target_group_key = "phpmyadmin"
-              }
-            }
-          ]
-
-          conditions = [
-            {
-              host_header = {
-                values = [local.phpmyadmin_domain_name]
-              }
-            }
-          ]
-        }
-      } : {}
-    }
   }
 
   target_groups = merge({
@@ -267,7 +235,7 @@ module "alb" {
         interval            = 30
         timeout             = 5
         matcher             = "200-399"
-        path                = "/healthz.php"
+        path                = "/"
         port                = "traffic-port"
         protocol            = "HTTP"
       }

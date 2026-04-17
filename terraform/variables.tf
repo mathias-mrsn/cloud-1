@@ -51,7 +51,7 @@ variable "ecs_max_task_count" {
 variable "ecs_autoscaling_requests_per_target" {
   description = "The ALB request count per target used to autoscale the WordPress ECS service."
   type        = number
-  default     = 200
+  default     = 50
 }
 
 variable "ecs_autoscaling_scale_in_cooldown" {
@@ -115,12 +115,6 @@ variable "phpmyadmin_subdomain" {
   description = "The subdomain used to expose phpMyAdmin when enabled."
   type        = string
   default     = "pma"
-}
-
-variable "performance_subdomain" {
-  description = "The subdomain used to expose the direct ALB performance testing endpoint."
-  type        = string
-  default     = "performance"
 }
 
 variable "wordpress_shared_root" {
