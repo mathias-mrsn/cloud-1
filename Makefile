@@ -25,6 +25,7 @@ TFPLAN_FILE ?= tfplan
 OUTPUTS_FILE ?= terraform_outputs.json
 OUTPUT_NAME ?=
 
+WRK_URL ?= https://mamaurai.fr/
 
 include make/docker.mk
 include make/terraform.mk
@@ -43,3 +44,9 @@ help: ## Show this help message
 .PHONY: precommit
 precommit: ## Run precommit check
 	@pre-commit run -a
+
+.PHONY: wrk-medium
+wrk: ## Run wrk benchmark to test autoscaling
+	@command -v wrk >/dev/null
+	@wrk -t2 -c8 -d10m "$(WRK_URL)"
+

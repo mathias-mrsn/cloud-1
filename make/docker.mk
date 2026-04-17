@@ -10,8 +10,6 @@ ENABLE_LOCAL_STACK ?= true
 DETACH_CONTAINERS ?= true
 LOCAL_STACK_SERVICES ?= db wordpress nginx phpmyadmin
 
-WRK_URL ?= https://mamaurai.fr/
-
 export DOCKER_PLATFORM
 export BUILDX_BUILDER
 export WORDPRESS_IMAGE_NAME
@@ -74,12 +72,3 @@ docker-version: ## Show docker and docker compose versions
 	@docker --version
 	@docker compose version
 
-.PHONY: wrk-medium
-wrk-medium: ## Run a medium wrk profile intended to trigger 3 WordPress tasks
-	@command -v wrk >/dev/null
-	@wrk -t2 -c8 -d10m "$(WRK_URL)"
-
-.PHONY: wrk-high
-wrk-high: ## Run a high wrk profile intended to trigger 4 WordPress tasks
-	@command -v wrk >/dev/null
-	@wrk -t4 -c16 -d10m "$(WRK_URL)"
