@@ -9,11 +9,7 @@ ENABLE_LOCAL_STACK ?= true
 DETACH_CONTAINERS ?= true
 LOCAL_STACK_SERVICES ?= db wordpress phpmyadmin
 
-SIEGE_URL ?= https://performance.mamaurai.fr/
-SIEGE_CONCURRENCY ?= 80
-SIEGE_DURATION ?= 10M
-SIEGE_DELAY ?= 0
-SIEGE_FILE ?=
+WRK_URL ?= https://mamaurai.fr/
 
 export DOCKER_PLATFORM
 export BUILDX_BUILDER
@@ -76,11 +72,12 @@ docker-version: ## Show docker and docker compose versions
 	@docker --version
 	@docker compose version
 
-.PHONY: siege
-siege: ## Run a siege load test against the deployed site
-	@command -v siege >/dev/null
-	@if [ -n "$(SIEGE_FILE)" ]; then \
-		siege -c $(SIEGE_CONCURRENCY) -t $(SIEGE_DURATION) -d $(SIEGE_DELAY) -f "$(SIEGE_FILE)"; \
-	else \
-		siege -c $(SIEGE_CONCURRENCY) -t $(SIEGE_DURATION) -d $(SIEGE_DELAY) "$(SIEGE_URL)"; \
-	fi
+.PHONY: wrk-medium
+wrk-medium: ## Run a medium wrk profile intended to trigger 3 WordPress tasks
+	@command -v wrk >/dev/null
+	@wrk -t2 -c8 -d10m "$(WRK_URL)"
+
+.PHONY: wrk-high
+wrk-high: ## Run a high wrk profile intended to trigger 4 WordPress tasks
+	@command -v wrk >/dev/null
+	@wrk -t4 -c16 -d10m "$(WRK_URL)"
