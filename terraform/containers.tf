@@ -6,20 +6,22 @@ locals {
       "${local.repository_root}/docker-compose.yaml",
     ],
     [for file in fileset(local.repository_root, "docker/wordpress/**") : "${local.repository_root}/${file}"],
+    [for file in fileset(local.repository_root, "docker/nginx/**") : "${local.repository_root}/${file}"],
     [for file in fileset(local.repository_root, "docker/phpmyadmin/**") : "${local.repository_root}/${file}"]
   )
 
   managed_container_build_hash = sha1(join("", [for file in local.managed_container_build_paths : filesha1(file)]))
 
   managed_container_image_names = {
-    wordpress_apache = format("%s:latest", aws_ecr_repository.container["wordpress-apache"].repository_url)
-    phpmyadmin       = format("%s:latest", aws_ecr_repository.container["phpmyadmin"].repository_url)
+    wordpress  = format("%s:latest", aws_ecr_repository.container["wordpress"].repository_url)
+    nginx      = format("%s:latest", aws_ecr_repository.container["nginx"].repository_url)
+    phpmyadmin = format("%s:latest", aws_ecr_repository.container["phpmyadmin"].repository_url)
   }
 }
 
 # checkov:skip=CKV_AWS_51: The deployment workflow republishes the mutable latest tag on each apply, so immutable tags would break image updates.
 resource "aws_ecr_repository" "container" {
-  for_each = toset(["wordpress-apache", "phpmyadmin"])
+  for_each = toset(["wordpress", "nginx", "phpmyadmin"])
 
   name                 = "${local.prefix}-${each.value}"
   force_delete         = true
@@ -49,12 +51,13 @@ resource "terraform_data" "container_images_build" {
 
   triggers_replace = [
     local.managed_container_build_hash,
-    local.managed_container_image_names.wordpress_apache,
+    local.managed_container_image_names.wordpress,
+    local.managed_container_image_names.nginx,
     local.managed_container_image_names.phpmyadmin,
   ]
 
   provisioner "local-exec" {
-    command     = "make docker-build WORDPRESS_APACHE_IMAGE_NAME=${local.managed_container_image_names.wordpress_apache} PHPMYADMIN_IMAGE_NAME=${local.managed_container_image_names.phpmyadmin} DOCKER_PLATFORM=linux/amd64 ENABLE_LOCAL_STACK=false"
+    command     = "make docker-build WORDPRESS_IMAGE_NAME=${local.managed_container_image_names.wordpress} NGINX_IMAGE_NAME=${local.managed_container_image_names.nginx} PHPMYADMIN_IMAGE_NAME=${local.managed_container_image_names.phpmyadmin} DOCKER_PLATFORM=linux/amd64 ENABLE_LOCAL_STACK=false"
     working_dir = path.cwd
   }
 }
@@ -254,7 +257,7 @@ module "ecs_service_wordpress" {
   load_balancer = {
     wordpress = {
       target_group_arn = module.alb.target_groups["wordpress"].arn
-      container_name   = "wordpress"
+      container_name   = "nginx"
       container_port   = 80
     }
   }
@@ -269,7 +272,7 @@ module "ecs_service_wordpress" {
   container_definitions = {
     wordpress = {
       name                   = "wordpress"
-      image                  = local.managed_container_image_names.wordpress_apache
+      image                  = local.managed_container_image_names.wordpress
       essential              = true
       memoryReservation      = 256
       readonlyRootFilesystem = false
@@ -301,6 +304,67 @@ module "ecs_service_wordpress" {
       ]
 
       portMappings = [{
+        containerPort = 9000
+        hostPort      = 0
+        protocol      = "tcp"
+      }]
+
+      mountPoints = [{
+        sourceVolume  = "wordpress-data"
+        containerPath = var.wordpress_shared_root
+        readOnly      = false
+      }]
+
+      healthCheck = {
+        command     = ["CMD-SHELL", "php-fpm -t || exit 1"]
+        interval    = 30
+        timeout     = 5
+        retries     = 3
+        startPeriod = 120
+      }
+
+      enable_cloudwatch_logging              = true
+      create_cloudwatch_log_group            = true
+      cloudwatch_log_group_name              = "/ecs/${local.prefix}-wordpress"
+      cloudwatch_log_group_use_name_prefix   = false
+      cloudwatch_log_group_retention_in_days = 7
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = "/ecs/${local.prefix}-wordpress"
+          awslogs-region        = var.aws_region
+          awslogs-stream-prefix = "wordpress"
+        }
+      }
+    }
+
+    nginx = {
+      name                   = "nginx"
+      image                  = local.managed_container_image_names.nginx
+      essential              = true
+      memoryReservation      = 128
+      readonlyRootFilesystem = false
+
+      dependsOn = [{
+        containerName = "wordpress"
+        condition     = "HEALTHY"
+      }]
+
+      links = ["wordpress"]
+
+      environment = [
+        {
+          name  = "WORDPRESS_DOCUMENT_ROOT"
+          value = var.wordpress_shared_root
+        },
+        {
+          name  = "WORDPRESS_FPM_HOST"
+          value = "wordpress:9000"
+        },
+      ]
+
+      portMappings = [{
         containerPort = 80
         hostPort      = 0
         protocol      = "tcp"
@@ -313,7 +377,7 @@ module "ecs_service_wordpress" {
       }]
 
       healthCheck = {
-        command     = ["CMD-SHELL", "test -f ${var.wordpress_shared_root}/healthz.php || exit 1"]
+        command     = ["CMD-SHELL", "wget -q -O /dev/null http://localhost/healthz.php || exit 1"]
         interval    = 30
         timeout     = 5
         retries     = 3
@@ -322,16 +386,16 @@ module "ecs_service_wordpress" {
 
       enable_cloudwatch_logging              = true
       create_cloudwatch_log_group            = true
-      cloudwatch_log_group_name              = "/ecs/${local.prefix}-wordpress-apache"
+      cloudwatch_log_group_name              = "/ecs/${local.prefix}-nginx"
       cloudwatch_log_group_use_name_prefix   = false
       cloudwatch_log_group_retention_in_days = 7
 
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = "/ecs/${local.prefix}-wordpress-apache"
+          awslogs-group         = "/ecs/${local.prefix}-nginx"
           awslogs-region        = var.aws_region
-          awslogs-stream-prefix = "wordpress-apache"
+          awslogs-stream-prefix = "nginx"
         }
       }
     }
