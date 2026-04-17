@@ -64,9 +64,6 @@ The currently deployed traffic paths are:
   - Route53 → CloudFront → ALB → WordPress ECS service
 - `pma.mamaurai.fr`
   - Route53 → CloudFront → ALB → phpMyAdmin ECS service
-- `performance.mamaurai.fr`
-  - Route53 → direct HTTPS to ALB → WordPress ECS service
-
 WordPress containers run on **ECS EC2 instances** in private subnets.
 
 - The EC2 instances mount **EFS** on the host.
@@ -184,27 +181,14 @@ make docker-up ENABLE_LOCAL_STACK=true DETACH_CONTAINERS=false
 
 ## Load testing
 
-The repository includes a `siege` target for quick load tests.
+The repository includes `wrk` targets for quick load testing.
 
-Default usage:
-
-```sh
-make siege
-```
-
-Example against the performance hostname:
+Examples:
 
 ```sh
-make siege SIEGE_CONCURRENCY=80 SIEGE_DURATION=10M SIEGE_DELAY=0
+make wrk-medium
+make wrk-high
 ```
-
-Useful variables:
-
-- `SIEGE_URL`
-- `SIEGE_CONCURRENCY`
-- `SIEGE_DURATION`
-- `SIEGE_DELAY`
-- `SIEGE_FILE`
 
 ## Terraform docs
 
