@@ -1,0 +1,40 @@
+server {
+  listen 80;
+  listen [::]:80;
+
+  server_name _;
+  root ${WORDPRESS_DOCUMENT_ROOT};
+  index index.php index.html;
+
+  client_max_body_size 64m;
+
+  location / {
+    try_files $uri $uri/ /index.php?$args;
+  }
+
+  location = /favicon.ico {
+    log_not_found off;
+    access_log off;
+  }
+
+  location = /robots.txt {
+    allow all;
+    log_not_found off;
+    access_log off;
+  }
+
+  location ~* \.(css|gif|ico|jpeg|jpg|js|png|svg|webp)$ {
+    expires max;
+    log_not_found off;
+  }
+
+  location ~ \.php$ {
+    try_files $uri =404;
+    include /etc/nginx/fastcgi_params;
+    fastcgi_index index.php;
+    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    fastcgi_param PATH_INFO $fastcgi_path_info;
+    fastcgi_param HTTPS $http_x_forwarded_proto;
+    fastcgi_pass ${WORDPRESS_FPM_HOST};
+  }
+}
