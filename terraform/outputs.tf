@@ -79,8 +79,3 @@ output "cloudffront_url" {
   value = "https://${coalesce(var.domain_name, module.cloudfront.cloudfront_distribution_domain_name)}"
 
 }
-
-output "performance_url" {
-  description = "The direct ALB HTTPS URL used for performance testing."
-  value       = var.domain_name != null ? "https://${local.performance_domain_name}" : null
-}
